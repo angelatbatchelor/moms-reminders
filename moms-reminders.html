@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4B7BEC">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Reminders">
+  <meta name="description" content="Remember bills, appointments, and medicines">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%234B7BEC'/%3E%3Cpath d='M96 36 C72 36 54 54 54 80 L54 112 L42 124 L42 130 L150 130 L150 124 L138 112 L138 80 C138 54 120 36 96 36 Z' fill='white' opacity='0.95'/%3E%3Ccircle cx='96' cy='144' r='10' fill='white' opacity='0.95'/%3E%3Crect x='88' y='26' width='16' height='14' rx='8' fill='white' opacity='0.95'/%3E%3Ctext x='96' y='172' font-family='Arial' font-size='18' font-weight='700' fill='white' text-anchor='middle'%3EReminders%3C/text%3E%3C/svg%3E">
+  <title>Mom's Reminders</title>
+  <style>
+:root {
+  --primary: #4B7BEC; --primary-dark: #3867d6;
+  --bills-color: #FC5C65; --appt-color: #20BF6B; --med-color: #F7B731;
+  --bg: #F0F4F8; --surface: #ffffff; --text: #2d3436; --text-muted: #636e72;
+  --border: #dfe6e9; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.12); --radius: 12px; --radius-lg: 20px;
+  --tab-height: 80px; --header-height: 60px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 18px; -webkit-text-size-adjust: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100dvh; display: flex; justify-content: center; align-items: flex-start; overscroll-behavior: none; }
+button, input, select, textarea, label { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: none; background: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+input, select, textarea { touch-action: manipulation; }
+a { color: var(--primary); }
+#app { width: 100%; max-width: 480px; min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+.app-header { position: sticky; top: 0; z-index: 100; background: var(--primary); height: var(--header-height); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-shadow: 0 2px 8px rgba(75,123,236,0.3); }
+.app-header h1 { color: white; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: rgba(255,255,255,0.85); transition: background 0.15s, color 0.15s; touch-action: manipulation; }
+.btn-icon:hover, .btn-icon:active { background: rgba(255,255,255,0.2); color: white; }
+.btn-icon.enabled { color: #FFE066; }
+.btn-icon.sync-on { color: #4dff91; }
+.tab-content { flex: 1; overflow-y: auto; padding: 16px 16px calc(var(--tab-height) + 16px); -webkit-overflow-scrolling: touch; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+.tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--tab-height); background: var(--surface); border-top: 1.5px solid var(--border); display: flex; align-items: stretch; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
+.tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.01em; transition: color 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; padding: 8px 4px; min-height: 48px; }
+.tab-btn .tab-emoji { font-size: 1.5rem; line-height: 1; transition: transform 0.15s; }
+.tab-btn.active { color: var(--primary); }
+.tab-btn.active .tab-emoji { transform: scale(1.15); }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 4px; }
+.section-title { font-size: 1.05rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.btn-add { background: var(--primary); color: white; font-size: 0.88rem; font-weight: 600; padding: 8px 16px; border-radius: 100px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(75,123,236,0.35); transition: background 0.15s, transform 0.1s, box-shadow 0.15s; touch-action: manipulation; white-space: nowrap; }
+.btn-add:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(75,123,236,0.4); }
+.btn-add:active { transform: scale(0.97); }
+.item-list { display: flex; flex-direction: column; gap: 10px; }
+.item-card { background: var(--surface); border-radius: var(--radius); padding: 14px 14px 12px; box-shadow: var(--shadow); border-left: 4px solid var(--border); position: relative; transition: box-shadow 0.15s, opacity 0.2s; }
+.item-card.bills-card { border-left-color: var(--bills-color); }
+.item-card.appt-card { border-left-color: var(--appt-color); }
+.item-card.med-card { border-left-color: var(--med-color); }
+.item-card.paid-card, .item-card.past-card { opacity: 0.6; }
+.item-name { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 3px; word-break: break-word; }
+.item-details { font-size: 0.88rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 8px; }
+.item-type { display: inline-block; background: #eef2ff; color: var(--primary); font-size: 0.8rem; font-weight: 600; padding: 2px 10px; border-radius: 100px; }
+.med-instructions { font-size: 0.88rem; color: var(--text); background: #fffbeb; border-left: 3px solid #f59e0b; padding: 8px 10px; border-radius: 0 6px 6px 0; margin-bottom: 8px; line-height: 1.45; }
+.item-notes { font-size: 0.83rem; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.badge-overdue { background: #fff0f1; color: #e0004a; border: 1px solid #ffb3bb; }
+.badge-today { background: #fff8e1; color: #b07800; border: 1px solid #ffe082; }
+.badge-soon { background: #f3f3f3; color: #555; border: 1px solid #ddd; }
+.badge-paid { background: #e8f8f0; color: #1a8a4a; border: 1px solid #a8e6c3; }
+.badge-tomorrow { background: #e8f3ff; color: #1a5bb5; border: 1px solid #a8c8f8; }
+.badge-past { background: #f0f0f0; color: #888; border: 1px solid #ccc; }
+.card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.card-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; flex: 1; }
+.btn-action { height: 34px; padding: 0 12px; border-radius: 8px; font-size: 0.83rem; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: background 0.15s, transform 0.1s; touch-action: manipulation; white-space: nowrap; }
+.btn-action:active { transform: scale(0.96); }
+.btn-paid { background: #e8f8f0; color: #1a8a4a; border: 1.5px solid #a8e6c3; }
+.btn-paid:hover { background: #d0f0e0; }
+.btn-paid.is-paid { background: #1a8a4a; color: white; border-color: #1a8a4a; }
+.btn-cal { background: #e8f0ff; color: var(--primary); border: 1.5px solid #b0c8f8; }
+.btn-cal:hover { background: #d0e0ff; }
+.btn-delete { background: #fff0f0; color: #c0392b; border: 1.5px solid #f0b8b8; margin-left: auto; }
+.btn-delete:hover { background: #ffe0e0; }
+.time-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.time-pill { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 100px; font-size: 0.83rem; font-weight: 600; border: 1.5px solid var(--border); background: #f5f7fa; color: var(--text-muted); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; min-height: 36px; }
+.time-pill:active { transform: scale(0.95); }
+.time-pill.taken { background: #e8f8f0; border-color: var(--appt-color); color: #1a8a4a; }
+.time-pill.taken::after { content: ' ✓'; font-weight: 700; }
+.badge-all-taken { background: #e8f8f0; color: #1a8a4a; border: 1px solid #a8e6c3; font-size: 0.78rem; font-weight: 600; padding: 3px 10px; border-radius: 100px; display: inline-flex; align-items: center; gap: 4px; }
+.today-date { font-size: 1.15rem; font-weight: 700; color: var(--primary); margin-bottom: 20px; padding: 12px 14px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; }
+.today-section { margin-bottom: 24px; }
+.today-section-title { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.empty-state { text-align: center; padding: 18px 12px; color: var(--text-muted); font-size: 0.9rem; background: white; border-radius: var(--radius); border: 1.5px dashed var(--border); }
+.empty-state-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet { width: 100%; max-width: 480px; background: var(--surface); border-radius: 24px 24px 0 0; max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 0 env(safe-area-inset-bottom, 16px); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); box-shadow: 0 -8px 32px rgba(0,0,0,0.18); }
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+.modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.btn-modal-close { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); color: var(--text-muted); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; touch-action: manipulation; transition: background 0.15s; }
+.btn-modal-close:hover { background: var(--border); }
+.modal-body { padding: 20px 20px 8px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 0.88rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.label-hint { text-transform: none; font-weight: 400; font-size: 0.82rem; }
+.form-control { width: 100%; padding: 12px 14px; font-size: 1rem; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none; appearance: none; }
+.form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75,123,236,0.15); }
+textarea.form-control { resize: vertical; min-height: 72px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-check { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+.form-check-input { width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+.form-check-label { font-size: 1rem; color: var(--text); cursor: pointer; }
+.med-time-adder { display: flex; gap: 8px; align-items: stretch; }
+.med-time-adder .form-control { flex: 1; }
+.btn-add-time { padding: 0 18px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background 0.15s, transform 0.1s; min-height: 52px; }
+.btn-add-time:hover { background: var(--primary-dark); }
+.btn-add-time:active { transform: scale(0.97); }
+.med-time-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 32px; align-items: center; }
+.med-time-chip { display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; border: 1.5px solid var(--primary); color: var(--primary); border-radius: 100px; padding: 6px 8px 6px 14px; font-size: 0.92rem; font-weight: 600; }
+.med-time-remove { background: none; border: none; color: var(--primary); font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 3px; font-weight: 300; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: color 0.15s; }
+.med-time-remove:hover { color: #e53e3e; }
+.med-time-empty { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+.btn-submit { width: 100%; padding: 15px; background: var(--primary); color: white; font-size: 1rem; font-weight: 700; border-radius: 12px; margin-top: 8px; margin-bottom: 16px; transition: background 0.15s, transform 0.1s; touch-action: manipulation; }
+.btn-submit:hover { background: var(--primary-dark); }
+.btn-submit:active { transform: scale(0.98); }
+.install-banner { position: fixed; bottom: calc(var(--tab-height) + 8px); left: 50%; transform: translateX(-50%) translateY(0); width: calc(100% - 32px); max-width: 448px; background: linear-gradient(135deg, #6c5ce7, #a855f7); color: white; border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; gap: 12px; z-index: 200; box-shadow: var(--shadow-md); }
+.install-banner.hidden { display: none; }
+.install-banner-text { flex: 1; font-size: 0.9rem; font-weight: 500; line-height: 1.4; }
+.install-banner-text strong { display: block; font-size: 0.95rem; margin-bottom: 2px; }
+.btn-install { background: rgba(255,255,255,0.25); color: white; font-size: 0.88rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; white-space: nowrap; border: 1.5px solid rgba(255,255,255,0.4); transition: background 0.15s; touch-action: manipulation; }
+.btn-install:hover { background: rgba(255,255,255,0.35); }
+.btn-install-dismiss { color: rgba(255,255,255,0.7); font-size: 1.2rem; padding: 4px; touch-action: manipulation; }
+.toast { position: fixed; bottom: calc(var(--tab-height) + 16px); left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(30,30,30,0.92); color: white; padding: 10px 20px; border-radius: 100px; font-size: 0.9rem; font-weight: 500; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; max-width: calc(100vw - 48px); text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.amount-display { font-size: 1.05rem; font-weight: 700; color: var(--bills-color); }
+.recurring-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); background: var(--bg); padding: 2px 8px; border-radius: 100px; border: 1px solid var(--border); }
+/* ---- Sync / Settings styles ---- */
+.sync-banner { background: linear-gradient(135deg, #4B7BEC, #6c5ce7); color: white; border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; box-shadow: var(--shadow-md); }
+.sync-banner-text { flex: 1; font-size: 0.9rem; line-height: 1.4; }
+.sync-banner-text strong { display: block; margin-bottom: 1px; }
+.btn-sync-setup { background: rgba(255,255,255,0.25); color: white; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.4); white-space: nowrap; transition: background 0.15s; touch-action: manipulation; }
+.btn-sync-setup:hover { background: rgba(255,255,255,0.35); }
+.setup-steps { margin: 16px 0 20px; display: flex; flex-direction: column; gap: 16px; }
+.setup-step { display: flex; gap: 12px; align-items: flex-start; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-text { font-size: 0.92rem; line-height: 1.55; color: var(--text); }
+.step-text strong { color: var(--text); }
+.step-text em { font-style: normal; background: var(--bg); padding: 1px 6px; border-radius: 5px; font-size: 0.88rem; font-weight: 600; }
+.settings-section { margin-bottom: 20px; }
+.settings-section-label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.sync-status-card { border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.sync-status-card.connected { background: #e8f8f0; border: 1.5px solid #a8e6c3; }
+.sync-status-card.error { background: #fff8e1; border: 1.5px solid #ffe082; }
+.sync-status-card.offline { background: var(--bg); border: 1.5px solid var(--border); }
+.sync-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.sync-dot.green { background: #20BF6B; }
+.sync-dot.amber { background: #f59e0b; }
+.sync-dot.gray { background: #b0b8c1; }
+.sync-status-text strong { font-size: 0.95rem; display: block; }
+.sync-status-text span { font-size: 0.83rem; color: var(--text-muted); }
+.settings-btn { width: 100%; padding: 14px 16px; border-radius: 10px; font-size: 0.97rem; font-weight: 600; text-align: left; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); margin-bottom: 10px; transition: background 0.15s; touch-action: manipulation; }
+.settings-btn:hover { background: var(--bg); }
+.settings-btn:active { transform: scale(0.98); }
+.settings-btn.danger { color: #c0392b; border-color: #f0b8b8; }
+.settings-btn.danger:hover { background: #fff0f0; }
+.link-box { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: var(--text-muted); word-break: break-all; margin-bottom: 12px; }
+@supports (padding: env(safe-area-inset-bottom)) {
+  .tab-bar { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--tab-height) + env(safe-area-inset-bottom)); }
+  .tab-content { padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom) + 16px); }
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1>🏠 Mom's Reminders</h1>
+      <div class="header-actions">
+        <button class="btn-icon" id="btn-settings" onclick="openSettings()" title="Family sync / Settings" aria-label="Settings">⚙️</button>
+        <button class="btn-icon" id="btn-notif" onclick="requestNotificationPermission()" title="Enable reminders" aria-label="Enable notifications">🔔</button>
+      </div>
+    </header>
+
+    <main class="tab-content">
+      <section id="pane-today" class="tab-pane active" role="tabpanel" aria-label="Today">
+        <div id="sync-setup-banner" class="sync-banner" style="display:none;">
+          <div class="sync-banner-text">
+            <strong>👨‍👩‍👧 Add from your phone, mom sees it</strong>
+            <span style="font-size:0.85rem;opacity:0.85;">Set up family sync — free &amp; easy</span>
+          </div>
+          <button onclick="openModal('modal-sync')" class="btn-sync-setup">Set Up</button>
+        </div>
+        <div id="today-content"></div>
+      </section>
+
+      <section id="pane-bills" class="tab-pane" role="tabpanel" aria-label="Bills">
+        <div class="section-header">
+          <h2 class="section-title">💳 Bills</h2>
+          <button class="btn-add" onclick="openModal('modal-bill')" aria-label="Add bill">＋ Add Bill</button>
+        </div>
+        <div id="bills-list" class="item-list"></div>
+      </section>
+
+      <section id="pane-appointments" class="tab-pane" role="tabpanel" aria-label="Appointments">
+        <div class="section-header">
+          <h2 class="section-title">📅 Appointments</h2>
+          <button class="btn-add" onclick="openModal('modal-appt')" aria-label="Add appointment">＋ Add</button>
+        </div>
+        <div id="appt-list" class="item-list"></div>
+      </section>
+
+      <section id="pane-medicines" class="tab-pane" role="tabpanel" aria-label="Medicines">
+        <div class="section-header">
+          <h2 class="section-title">💊 Medicines</h2>
+          <button class="btn-add" onclick="openModal('modal-med')" aria-label="Add medicine">＋ Add</button>
+        </div>
+        <div id="med-list" class="item-list"></div>
+      </section>
+    </main>
+
+    <nav class="tab-bar" role="tablist" aria-label="Main navigation">
+      <button class="tab-btn active" id="tab-today" onclick="switchTab('today')" role="tab" aria-selected="true" aria-controls="pane-today">
+        <span class="tab-emoji" aria-hidden="true">🏠</span><span>Today</span>
+      </button>
+      <button class="tab-btn" id="tab-bills" onclick="switchTab('bills')" role="tab" aria-selected="false" aria-controls="pane-bills">
+        <span class="tab-emoji" aria-hidden="true">💳</span><span>Bills</span>
+      </button>
+      <button class="tab-btn" id="tab-appointments" onclick="switchTab('appointments')" role="tab" aria-selected="false" aria-controls="pane-appointments">
+        <span class="tab-emoji" aria-hidden="true">📅</span><span>Appts</span>
+      </button>
+      <button class="tab-btn" id="tab-medicines" onclick="switchTab('medicines')" role="tab" aria-selected="false" aria-controls="pane-medicines">
+        <span class="tab-emoji" aria-hidden="true">💊</span><span>Meds</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODAL: Add Bill -->
+  <div class="modal-overlay" id="modal-bill" role="dialog" aria-modal="true" onclick="handleOverlayClick(event,'modal-bill')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">💳 Add Bill</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-bill')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-bill" onsubmit="saveBill(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="bill-name">Bill Name *</label>
+            <input class="form-control" type="text" id="bill-name" name="name" placeholder="e.g. Electric Bill" required autocomplete="off">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="bill-amount">Amount ($)</label>
+              <input class="form-control" type="number" id="bill-amount" name="amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bill-due">Due Date *</label>
+              <input class="form-control" type="date" id="bill-due" name="dueDate" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bill-recurring" name="recurring">
+              <label class="form-check-label" for="bill-recurring">🔄 Recurring monthly bill</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="bill-notes">Notes</label>
+            <textarea class="form-control" id="bill-notes" name="notes" placeholder="Account number, website, etc." rows="2"></textarea>
+          </div>
+          <button type="submit" class="btn-submit">Save Bill</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Appointment -->
+  <div class="modal-overlay" id="modal-appt" role="dialog" aria-modal="true" onclick="handleOverlayClick(event,'modal-appt')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">📅 Add Appointment</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-appt')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-appt" onsubmit="saveAppointment(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="appt-doctor">Doctor / Provider *</label>
+            <input class="form-control" type="text" id="appt-doctor" name="doctor" placeholder="e.g. Dr. Smith" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="appt-type">Appointment Type</label>
+            <input class="form-control" type="text" id="appt-type" name="type" placeholder="e.g. Annual checkup, Cardiology" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="appt-date">Date *</label>
+              <input class="form-control" type="date" id="appt-date" name="date" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="appt-time">Time</label>
+              <input class="form-control" type="time" id="appt-time" name="time">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="appt-location">Location / Address</label>
+            <input class="form-control" type="text" id="appt-location" name="location" placeholder="Office name or address" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="appt-notes">Notes</label>
+            <textarea class="form-control" id="appt-notes" name="notes" placeholder="Insurance, parking, bring records, etc." rows="2"></textarea>
+          </div>
+          <button type="submit" class="btn-submit">Save Appointment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Medicine -->
+  <div class="modal-overlay" id="modal-med" role="dialog" aria-modal="true" onclick="handleOverlayClick(event,'modal-med')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">💊 Add Medicine</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-med')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-med" onsubmit="saveMedicine(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="med-name">Medicine Name *</label>
+            <input class="form-control" type="text" id="med-name" name="name" placeholder="e.g. Lisinopril" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="med-type">Type of Medicine</label>
+            <input class="form-control" type="text" id="med-type" name="type" placeholder="e.g. Blood pressure, Vitamin D, Insulin" list="med-type-options" autocomplete="off">
+            <datalist id="med-type-options">
+              <option value="Blood Pressure"><option value="Blood Thinner"><option value="Blood Sugar / Diabetes">
+              <option value="Cholesterol"><option value="Heart"><option value="Thyroid">
+              <option value="Pain Relief"><option value="Anti-inflammatory"><option value="Antibiotic">
+              <option value="Antidepressant"><option value="Anxiety"><option value="Allergy">
+              <option value="Acid Reflux / Stomach"><option value="Sleep Aid"><option value="Vitamin / Supplement">
+              <option value="Eye Drops"><option value="Inhaler / Breathing"><option value="Skin / Topical">
+              <option value="Water Pill / Diuretic"><option value="Other">
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="med-dosage">How Much to Take</label>
+            <input class="form-control" type="text" id="med-dosage" name="dosage" placeholder="e.g. 10mg, 2 tablets, 1 pill" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="med-instructions">Doctor's Instructions</label>
+            <textarea class="form-control" id="med-instructions" name="instructions" placeholder="e.g. Take with food. Do not skip." rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reminder Times * <span class="label-hint">Add each time to take this</span></label>
+            <div class="med-time-adder">
+              <input class="form-control" type="time" id="med-time-input" aria-label="Pick a reminder time">
+              <button type="button" class="btn-add-time" onclick="addMedTime()">+ Add</button>
+            </div>
+            <div id="med-times-chips" class="med-time-chips" aria-live="polite">
+              <span class="med-time-empty">No times added yet</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="med-notes">Notes</label>
+            <textarea class="form-control" id="med-notes" name="notes" placeholder="Refill date, prescribing doctor, pharmacy…" rows="2"></textarea>
+          </div>
+          <button type="submit" class="btn-submit">Save Medicine</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Family Sync Setup -->
+  <div class="modal-overlay" id="modal-sync" role="dialog" aria-modal="true" onclick="handleOverlayClick(event,'modal-sync')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">👨‍👩‍👧 Family Sync Setup</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-sync')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.95rem;color:var(--text-muted);line-height:1.5;margin-bottom:4px;">
+          Connect a <strong>free Firebase account</strong> so you and your mom see the same reminders on any phone. Takes about 5 minutes.
+        </p>
+
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>Open Firebase Console</strong><br>
+              Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> → sign in with Google → click <em>Add project</em> → name it anything → click through to <em>Create project</em>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>Create a Realtime Database</strong><br>
+              In your new project click <em>Build</em> → <em>Realtime Database</em> → <em>Create database</em> → pick any location → choose <em>Start in test mode</em> → <em>Enable</em>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>Get your keys</strong><br>
+              Click the ⚙️ gear → <em>Project settings</em> → scroll to <em>Your apps</em> → click <em>&lt;/&gt; Web</em> → nickname it anything → <em>Register app</em><br>
+              Copy the <em>apiKey</em> and <em>databaseURL</em> values and paste them below.
+            </div>
+          </div>
+        </div>
+
+        <form id="form-sync" onsubmit="saveSync(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="sync-apikey">API Key</label>
+            <input class="form-control" type="text" id="sync-apikey" placeholder='AIzaSy...' autocomplete="off" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sync-dburl">Database URL</label>
+            <input class="form-control" type="text" id="sync-dburl" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off" spellcheck="false">
+          </div>
+          <button type="submit" class="btn-submit">✅ Connect &amp; Start Syncing</button>
+        </form>
+        <button onclick="closeModal('modal-sync')" style="width:100%;text-align:center;padding:10px 0 4px;color:var(--text-muted);font-size:0.95rem;display:block;">I'll do this later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Settings -->
+  <div class="modal-overlay" id="modal-settings" role="dialog" aria-modal="true" onclick="handleOverlayClick(event,'modal-settings')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Settings</h3>
+        <button class="btn-modal-close" onclick="closeModal('modal-settings')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="settings-body">
+        <!-- rendered by renderSettingsModal() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Install Banner -->
+  <div class="install-banner hidden" id="install-banner">
+    <div class="install-banner-text">
+      <strong>Install This App</strong>Add to your home screen for quick access
+    </div>
+    <button class="btn-install" id="btn-install-app" onclick="triggerInstallPrompt()">Install</button>
+    <button class="btn-install-dismiss" onclick="dismissInstallBanner()" aria-label="Dismiss">✕</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+'use strict';
+
+/* ============================================================
+   Storage keys
+   ============================================================ */
+const LS_BILLS = 'bills';
+const LS_APPTS = 'appointments';
+const LS_MEDS  = 'medicines';
+
+/* ============================================================
+   Legacy time-slot compat
+   ============================================================ */
+const LEGACY_TIMES = {
+  morning: { display: '8:00 AM',  hh: 8,  mm: 0 },
+  noon:    { display: '12:00 PM', hh: 12, mm: 0 },
+  evening: { display: '6:00 PM',  hh: 18, mm: 0 },
+  bedtime: { display: '9:00 PM',  hh: 21, mm: 0 },
+};
+
+function formatTime12h(slot) {
+  if (LEGACY_TIMES[slot]) return LEGACY_TIMES[slot].display;
+  const [h, m] = slot.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2,'0')} ${period}`;
+}
+
+function parseSlotTime(slot) {
+  if (LEGACY_TIMES[slot]) return { hh: LEGACY_TIMES[slot].hh, mm: LEGACY_TIMES[slot].mm };
+  const [hh, mm] = slot.split(':').map(Number);
+  return { hh, mm };
+}
+
+/* ============================================================
+   Module-level state
+   ============================================================ */
+let _pendingMedTimes = [];
+let _notifTimers     = [];
+let _deferredInstallPrompt = null;
+let _toastTimer      = null;
+
+// Firebase state
+let _db              = null;
+let _firebaseEnabled = false;
+let _syncConfig      = null;
+let _ignoreNextFbUpdate = false; // suppress re-render echo after local write
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+function uuid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function parseLocalDate(dateStr) {
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function daysDiff(dateStr) {
+  if (!dateStr) return Infinity;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((parseLocalDate(dateStr) - today) / 86400000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  return parseLocalDate(dateStr).toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  return parseLocalDate(dateStr).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const suffix = hh < 12 ? 'AM' : 'PM';
+  const h = hh % 12 || 12;
+  return mm === 0 ? `${h} ${suffix}` : `${h}:${String(mm).padStart(2,'0')} ${suffix}`;
+}
+
+function addMinutes(timeStr, minutes) {
+  if (!timeStr) return '';
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const total = hh * 60 + mm + minutes;
+  const newHH = Math.floor(((total % 1440) + 1440) % 1440 / 60);
+  const newMM = ((total % 60) + 60) % 60;
+  return `${String(newHH).padStart(2,'0')}:${String(newMM).padStart(2,'0')}`;
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   Storage: localStorage + optional Firebase sync
+   ============================================================ */
+function loadList(key) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+}
+
+function saveList(key, arr) {
+  try {
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch(e) {
+    showToast('⚠️ Could not save — storage full?');
+    return;
+  }
+  if (_firebaseEnabled && _db) {
+    _ignoreNextFbUpdate = true;
+    _db.ref('reminders/' + key).set(arr).catch(err => {
+      _ignoreNextFbUpdate = false;
+      console.error('Firebase write error:', err);
+      showToast('⚠️ Sync failed — saved on this device only');
+    });
+    // Reset the flag after a short delay in case the write is very fast
+    setTimeout(() => { _ignoreNextFbUpdate = false; }, 3000);
+  }
+}
+
+/* ============================================================
+   Firebase sync
+   ============================================================ */
+function initSync() {
+  if (typeof firebase === 'undefined') return; // SDK not loaded (offline?)
+
+  // Check URL for ?sync= param (share link from Angela)
+  try {
+    const url = new URL(window.location.href);
+    const param = url.searchParams.get('sync');
+    if (param) {
+      const config = JSON.parse(atob(param));
+      if (config && config.apiKey && config.databaseURL) {
+        localStorage.setItem('syncConfig', JSON.stringify(config));
+        _syncConfig = config;
+        url.searchParams.delete('sync');
+        history.replaceState({}, '', url.pathname + (url.search && url.search !== '?' ? url.search : ''));
+        showToast('🔄 Family sync configured!');
+      }
+    }
+  } catch(e) { /* ignore bad params */ }
+
+  // Load saved config
+  if (!_syncConfig) {
+    try {
+      const saved = localStorage.getItem('syncConfig');
+      if (saved) _syncConfig = JSON.parse(saved);
+    } catch(e) {}
+  }
+
+  if (_syncConfig) connectFirebase(_syncConfig);
+  updateSyncUI();
+}
+
+function connectFirebase(config) {
+  try {
+    if (typeof firebase === 'undefined') return false;
+    // Init app (only once)
+    if (!firebase.apps || firebase.apps.length === 0) {
+      firebase.initializeApp({ apiKey: config.apiKey, databaseURL: config.databaseURL });
+    }
+    _db = firebase.database();
+    _firebaseEnabled = true;
+
+    // Real-time listener — fires on load and on every change
+    _db.ref('reminders').on('value', snap => {
+      if (_ignoreNextFbUpdate) { _ignoreNextFbUpdate = false; return; }
+      const data = snap.val();
+      if (data) {
+        if (Array.isArray(data[LS_BILLS]))  localStorage.setItem(LS_BILLS,  JSON.stringify(data[LS_BILLS]));
+        if (Array.isArray(data[LS_APPTS]))  localStorage.setItem(LS_APPTS,  JSON.stringify(data[LS_APPTS]));
+        if (Array.isArray(data[LS_MEDS]))   localStorage.setItem(LS_MEDS,   JSON.stringify(data[LS_MEDS]));
+        renderCurrent();
+        scheduleNotifications();
+      }
+      updateSyncUI();
+    }, err => {
+      console.error('Firebase listener error:', err);
+      _firebaseEnabled = false;
+      updateSyncUI();
+    });
+
+    updateSyncUI();
+    return true;
+  } catch(e) {
+    console.error('Firebase connect failed:', e);
+    _firebaseEnabled = false;
+    updateSyncUI();
+    return false;
+  }
+}
+
+function saveSync(event) {
+  event.preventDefault();
+  const apiKey     = (document.getElementById('sync-apikey').value || '').trim();
+  const databaseURL = (document.getElementById('sync-dburl').value || '').trim();
+  if (!apiKey || !databaseURL) { showToast('⚠️ Fill in both fields'); return; }
+
+  let dbUrl = databaseURL;
+  if (!dbUrl.startsWith('https://')) dbUrl = 'https://' + dbUrl;
+  if (dbUrl.endsWith('/')) dbUrl = dbUrl.slice(0,-1);
+
+  const config = { apiKey, databaseURL: dbUrl };
+  localStorage.setItem('syncConfig', JSON.stringify(config));
+  _syncConfig = config;
+
+  const ok = connectFirebase(config);
+  closeModal('modal-sync');
+  if (ok) {
+    showToast('✅ Connected! Syncing reminders now…');
+  } else {
+    showToast('⚠️ Could not connect — check your keys');
+  }
+}
+
+function updateSyncUI() {
+  const btn = document.getElementById('btn-settings');
+  const banner = document.getElementById('sync-setup-banner');
+  if (btn) {
+    if (_firebaseEnabled) {
+      btn.classList.add('sync-on');
+      btn.title = 'Family sync ON — Settings';
+    } else {
+      btn.classList.remove('sync-on');
+      btn.title = _syncConfig ? 'Sync error — Settings' : 'Set up family sync — Settings';
+    }
+  }
+  if (banner) banner.style.display = (_syncConfig) ? 'none' : '';
+}
+
+function openSettings() {
+  if (_syncConfig) {
+    renderSettingsModal();
+    openModal('modal-settings');
+  } else {
+    openModal('modal-sync');
+  }
+}
+
+function renderSettingsModal() {
+  const body = document.getElementById('settings-body');
+  if (!body) return;
+
+  let statusHtml;
+  if (_firebaseEnabled) {
+    statusHtml = `<div class="sync-status-card connected"><div class="sync-dot green"></div><div class="sync-status-text"><strong>Family Sync Active ✅</strong><span>Changes sync to all connected phones in real time</span></div></div>`;
+  } else if (_syncConfig) {
+    statusHtml = `<div class="sync-status-card error"><div class="sync-dot amber"></div><div class="sync-status-text"><strong>Sync Error ⚠️</strong><span>Could not connect to Firebase — check your internet</span></div></div>`;
+  } else {
+    statusHtml = `<div class="sync-status-card offline"><div class="sync-dot gray"></div><div class="sync-status-text"><strong>Not Syncing</strong><span>This device only — set up sync to share with Mom</span></div></div>`;
+  }
+
+  const shareBtn = _syncConfig
+    ? `<button class="settings-btn" onclick="shareWithMom()">📤 Share Link with Mom</button>`
+    : `<button class="settings-btn" onclick="closeModal('modal-settings');openModal('modal-sync')">👨‍👩‍👧 Set Up Family Sync</button>`;
+
+  const disconnectBtn = _syncConfig
+    ? `<button class="settings-btn danger" onclick="disconnectSync()">🔌 Disconnect Sync</button>`
+    : '';
+
+  body.innerHTML = statusHtml + shareBtn + disconnectBtn +
+    `<div style="margin-top:8px;padding-bottom:8px;"></div>`;
+}
+
+function shareWithMom() {
+  if (!_syncConfig) { showToast('⚠️ Set up sync first'); return; }
+  const encoded = btoa(JSON.stringify(_syncConfig));
+  const url = window.location.origin + window.location.pathname + '?sync=' + encoded;
+
+  // Show link in settings body so she can copy it
+  const body = document.getElementById('settings-body');
+  if (body) {
+    const box = body.querySelector('.link-box');
+    if (!box) {
+      const div = document.createElement('div');
+      div.className = 'link-box';
+      div.textContent = url;
+      body.insertBefore(div, body.firstChild);
+    }
+  }
+
+  if (navigator.share) {
+    navigator.share({ title: "Mom's Reminders", text: "Here's the link for your reminders app!", url })
+      .catch(() => copyToClipboard(url));
+  } else {
+    copyToClipboard(url);
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Link copied! Text it to Mom'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('📋 Link copied! Text it to Mom'); } catch(e) { showToast('📋 Copy the link above and text it to Mom'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function disconnectSync() {
+  if (!confirm('Disconnect family sync? Data already saved stays on this device.')) return;
+  localStorage.removeItem('syncConfig');
+  _syncConfig = null;
+  _firebaseEnabled = false;
+  _db = null;
+  closeModal('modal-settings');
+  updateSyncUI();
+  showToast('🔌 Sync disconnected');
+}
+
+/* ============================================================
+   Re-render current tab
+   ============================================================ */
+function renderCurrent() {
+  const active = document.querySelector('.tab-btn.active');
+  if (!active) { renderToday(); return; }
+  const name = active.id.replace('tab-','');
+  if (name === 'today')        renderToday();
+  else if (name === 'bills')   renderBills();
+  else if (name === 'appointments') renderAppointments();
+  else if (name === 'medicines')    renderMedicines();
+}
+
+/* ============================================================
+   Tab switching
+   ============================================================ */
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  const pane = document.getElementById('pane-'+name);
+  if (pane) pane.classList.add('active');
+  const btn = document.getElementById('tab-'+name);
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected','true'); }
+  if (name==='today')        renderToday();
+  if (name==='bills')        renderBills();
+  if (name==='appointments') renderAppointments();
+  if (name==='medicines')    renderMedicines();
+}
+
+/* ============================================================
+   Modals
+   ============================================================ */
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const first = el.querySelector('input:not([type=checkbox]), textarea');
+  if (first) setTimeout(() => first.focus(), 300);
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  document.body.style.overflow = '';
+  const form = el.querySelector('form');
+  if (form) form.reset();
+  if (id === 'modal-med') { _pendingMedTimes = []; renderMedTimeChips(); }
+}
+
+function handleOverlayClick(event, id) {
+  if (event.target === document.getElementById(id)) closeModal(id);
+}
+
+/* ============================================================
+   Bills
+   ============================================================ */
+function isBillPaidThisCycle(bill) {
+  if (!Array.isArray(bill.paidDates) || bill.paidDates.length === 0) return false;
+  if (!bill.recurring) return bill.paidDates.length > 0;
+  const today = new Date();
+  return bill.paidDates.some(d => {
+    const pd = parseLocalDate(d);
+    return pd.getFullYear() === today.getFullYear() && pd.getMonth() === today.getMonth();
+  });
+}
+
+function getNextDueDate(bill) {
+  if (!bill.dueDate) return null;
+  if (!bill.recurring) return bill.dueDate;
+  const [,,day] = bill.dueDate.split('-').map(Number);
+  const today = new Date(); today.setHours(0,0,0,0);
+  let candidate = new Date(today.getFullYear(), today.getMonth(), day);
+  if (candidate < today) candidate = new Date(today.getFullYear(), today.getMonth()+1, day);
+  const year = candidate.getFullYear(), month = candidate.getMonth();
+  const maxDay = new Date(year, month+1, 0).getDate();
+  if (day > maxDay) candidate = new Date(year, month, maxDay);
+  return candidate.toISOString().slice(0,10);
+}
+
+function billUrgencyBadge(bill) {
+  if (isBillPaidThisCycle(bill)) return '<span class="badge badge-paid">✓ Paid</span>';
+  const next = getNextDueDate(bill);
+  if (!next) return '';
+  const diff = daysDiff(next);
+  if (diff < 0)  return '<span class="badge badge-overdue">Overdue</span>';
+  if (diff === 0) return '<span class="badge badge-today">Due Today!</span>';
+  if (diff <= 3)  return `<span class="badge badge-today">In ${diff} day${diff===1?'':'s'}</span>`;
+  return `<span class="badge badge-soon">In ${diff} days</span>`;
+}
+
+function saveBill(event) {
+  event.preventDefault();
+  const form = event.target;
+  const name = form.elements['name'].value.trim();
+  const amountRaw = form.elements['amount'].value;
+  const dueDate = form.elements['dueDate'].value;
+  const recurring = form.elements['recurring'].checked;
+  const notes = form.elements['notes'].value.trim();
+  if (!name)    { showToast('⚠️ Please enter a bill name'); return; }
+  if (!dueDate) { showToast('⚠️ Please pick a due date'); return; }
+  const bill = { id: uuid(), name, amount: amountRaw !== '' ? parseFloat(amountRaw) : null, dueDate, recurring, notes, paidDates: [], createdAt: new Date().toISOString() };
+  const bills = loadList(LS_BILLS); bills.push(bill); saveList(LS_BILLS, bills);
+  closeModal('modal-bill'); renderBills(); showToast('💳 Bill saved!'); scheduleNotifications();
+}
+
+function markBillPaid(id) {
+  const bills = loadList(LS_BILLS);
+  const bill = bills.find(b => b.id === id);
+  if (!bill) return;
+  if (isBillPaidThisCycle(bill)) {
+    if (bill.recurring) {
+      const today = new Date();
+      bill.paidDates = bill.paidDates.filter(d => {
+        const pd = parseLocalDate(d);
+        return !(pd.getFullYear()===today.getFullYear() && pd.getMonth()===today.getMonth());
+      });
+    } else { bill.paidDates = []; }
+    showToast('↩️ Marked unpaid');
+  } else {
+    bill.paidDates = bill.paidDates || [];
+    bill.paidDates.push(todayStr());
+    showToast('✅ Marked paid!');
+  }
+  saveList(LS_BILLS, bills); renderBills();
+  if (document.getElementById('pane-today').classList.contains('active')) renderToday();
+}
+
+function deleteBill(id) {
+  if (!confirm('Delete this bill?')) return;
+  saveList(LS_BILLS, loadList(LS_BILLS).filter(b => b.id !== id));
+  renderBills();
+  if (document.getElementById('pane-today').classList.contains('active')) renderToday();
+  showToast('🗑️ Bill deleted');
+}
+
+function renderBills() {
+  const container = document.getElementById('bills-list');
+  if (!container) return;
+  const bills = loadList(LS_BILLS);
+  if (bills.length === 0) { container.innerHTML = '<div class="empty-state"><span class="empty-state-icon">💳</span>No bills yet — tap <strong>+ Add Bill</strong> to get started</div>'; return; }
+  const sorted = [...bills].sort((a,b) => { const da=getNextDueDate(a)||'9999', db=getNextDueDate(b)||'9999'; return da<db?-1:da>db?1:0; });
+  container.innerHTML = sorted.map(bill => {
+    const isPaid = isBillPaidThisCycle(bill);
+    const next = getNextDueDate(bill);
+    const amountHtml = bill.amount!=null ? `<span class="amount-display">$${Number(bill.amount).toFixed(2)}</span>` : '';
+    const recurringHtml = bill.recurring ? '<span class="recurring-badge">🔄 Monthly</span>' : '';
+    const notesHtml = bill.notes ? `<div class="item-notes">${escapeHtml(bill.notes)}</div>` : '';
+    return `<div class="item-card bills-card ${isPaid?'paid-card':''}">
+      <div class="item-name">${escapeHtml(bill.name)}</div>
+      <div class="item-details">${amountHtml}${recurringHtml}${next?`<span>Due ${escapeHtml(formatDateShort(next))}</span>`:''}</div>
+      ${notesHtml}
+      <div class="card-actions"><div class="card-meta">${billUrgencyBadge(bill)}</div>
+        <button class="btn-action btn-paid ${isPaid?'is-paid':''}" onclick="markBillPaid('${escapeHtml(bill.id)}')">${isPaid?'✓ Paid':'✓ Paid?'}</button>
+        <button class="btn-action btn-cal" onclick="exportBillToCalendar('${escapeHtml(bill.id)}')">📅</button>
+        <button class="btn-action btn-delete" onclick="deleteBill('${escapeHtml(bill.id)}')">🗑️</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   Appointments
+   ============================================================ */
+function apptDateBadge(dateStr) {
+  const diff = daysDiff(dateStr);
+  if (diff < 0)  return '<span class="badge badge-past">Past</span>';
+  if (diff === 0) return '<span class="badge badge-today">Today!</span>';
+  if (diff === 1) return '<span class="badge badge-tomorrow">Tomorrow</span>';
+  if (diff <= 7)  return `<span class="badge badge-soon">In ${diff} days</span>`;
+  return `<span class="badge badge-soon">${formatDateShort(dateStr)}</span>`;
+}
+
+function saveAppointment(event) {
+  event.preventDefault();
+  const form = event.target;
+  const doctor = form.elements['doctor'].value.trim();
+  const date = form.elements['date'].value;
+  if (!doctor) { showToast('⚠️ Please enter a doctor / provider name'); return; }
+  if (!date)   { showToast('⚠️ Please pick a date'); return; }
+  const appt = { id: uuid(), doctor, type: form.elements['type'].value.trim(), date, time: form.elements['time'].value, location: form.elements['location'].value.trim(), notes: form.elements['notes'].value.trim(), createdAt: new Date().toISOString() };
+  const appts = loadList(LS_APPTS); appts.push(appt); saveList(LS_APPTS, appts);
+  closeModal('modal-appt'); renderAppointments(); showToast('📅 Appointment saved!'); scheduleNotifications();
+}
+
+function deleteAppointment(id) {
+  if (!confirm('Delete this appointment?')) return;
+  saveList(LS_APPTS, loadList(LS_APPTS).filter(a => a.id !== id));
+  renderAppointments();
+  if (document.getElementById('pane-today').classList.contains('active')) renderToday();
+  showToast('🗑️ Appointment deleted');
+}
+
+function renderAppointments() {
+  const container = document.getElementById('appt-list');
+  if (!container) return;
+  const appts = loadList(LS_APPTS);
+  if (appts.length === 0) { container.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📅</span>No appointments yet — tap <strong>+ Add</strong> to schedule one</div>'; return; }
+  const sorted = [...appts].sort((a,b) => { const cmp=(a.date||'')<(b.date||'')?-1:(a.date||'')>(b.date||'')?1:0; return cmp!==0?cmp:(a.time||'')<(b.time||'')?-1:1; });
+  container.innerHTML = sorted.map(appt => {
+    const isPast = daysDiff(appt.date) < 0;
+    return `<div class="item-card appt-card ${isPast?'past-card':''}">
+      <div class="item-name">${escapeHtml(appt.doctor)}</div>
+      <div class="item-details">
+        ${appt.type?`<span>${escapeHtml(appt.type)}</span>`:''}
+        <span>📆 ${escapeHtml(formatDate(appt.date))}</span>
+        ${appt.time?`<span>🕐 ${escapeHtml(formatTime(appt.time))}</span>`:''}
+        ${appt.location?`<span>📍 ${escapeHtml(appt.location)}</span>`:''}
+      </div>
+      ${appt.notes?`<div class="item-notes">${escapeHtml(appt.notes)}</div>`:''}
+      <div class="card-actions"><div class="card-meta">${apptDateBadge(appt.date)}</div>
+        <button class="btn-action btn-cal" onclick="exportApptToCalendar('${escapeHtml(appt.id)}')">📅 Cal</button>
+        <button class="btn-action btn-delete" onclick="deleteAppointment('${escapeHtml(appt.id)}')">🗑️</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   Medicines
+   ============================================================ */
+function addMedTime() {
+  const input = document.getElementById('med-time-input');
+  const val = input ? input.value : '';
+  if (!val) { showToast('⚠️ Please pick a time first'); return; }
+  if (_pendingMedTimes.includes(val)) { showToast('⚠️ That time is already added'); return; }
+  _pendingMedTimes.push(val); _pendingMedTimes.sort(); input.value = '';
+  renderMedTimeChips();
+}
+
+function removeMedTime(idx) { _pendingMedTimes.splice(idx,1); renderMedTimeChips(); }
+
+function renderMedTimeChips() {
+  const container = document.getElementById('med-times-chips');
+  if (!container) return;
+  if (_pendingMedTimes.length === 0) { container.innerHTML = '<span class="med-time-empty">No times added yet</span>'; return; }
+  container.innerHTML = _pendingMedTimes.map((t,i) =>
+    `<span class="med-time-chip">⏰ ${escapeHtml(formatTime12h(t))}<button type="button" class="med-time-remove" onclick="removeMedTime(${i})" aria-label="Remove">×</button></span>`
+  ).join('');
+}
+
+function saveMedicine(event) {
+  event.preventDefault();
+  const form = event.target;
+  const name = form.elements['name'].value.trim();
+  if (!name)                         { showToast('⚠️ Please enter a medicine name'); return; }
+  if (_pendingMedTimes.length === 0) { showToast('⚠️ Please add at least one reminder time'); return; }
+  const med = {
+    id: uuid(), name,
+    type: form.elements['type'].value.trim(),
+    dosage: form.elements['dosage'].value.trim(),
+    instructions: form.elements['instructions'].value.trim(),
+    times: [..._pendingMedTimes],
+    takenLog: {},
+    notes: form.elements['notes'].value.trim(),
+    createdAt: new Date().toISOString()
+  };
+  const meds = loadList(LS_MEDS); meds.push(med); saveList(LS_MEDS, meds);
+  closeModal('modal-med'); renderMedicines(); showToast('💊 Medicine saved!'); scheduleNotifications();
+}
+
+function toggleMedicineTaken(id, timeSlot) {
+  const meds = loadList(LS_MEDS);
+  const med = meds.find(m => m.id === id);
+  if (!med) return;
+  const today = todayStr();
+  if (!med.takenLog) med.takenLog = {};
+  if (!Array.isArray(med.takenLog[today])) med.takenLog[today] = [];
+  const idx = med.takenLog[today].indexOf(timeSlot);
+  if (idx > -1) med.takenLog[today].splice(idx,1);
+  else med.takenLog[today].push(timeSlot);
+  saveList(LS_MEDS, meds); renderMedicines();
+  if (document.getElementById('pane-today').classList.contains('active')) renderToday();
+}
+
+function deleteMedicine(id) {
+  if (!confirm('Delete this medicine?')) return;
+  saveList(LS_MEDS, loadList(LS_MEDS).filter(m => m.id !== id));
+  renderMedicines();
+  if (document.getElementById('pane-today').classList.contains('active')) renderToday();
+  showToast('🗑️ Medicine deleted');
+}
+
+function buildTimePills(med, today, clickable) {
+  return med.times.map(slot => {
+    const taken = Array.isArray(med.takenLog[today]) && med.takenLog[today].includes(slot);
+    const display = formatTime12h(slot);
+    if (clickable) return `<button class="time-pill${taken?' taken':''}" onclick="toggleMedicineTaken('${escapeHtml(med.id)}','${escapeHtml(slot)}')" aria-pressed="${taken}">⏰ ${escapeHtml(display)}</button>`;
+    return `<span class="time-pill${taken?' taken':''}">⏰ ${escapeHtml(display)}</span>`;
+  }).join('');
+}
+
+function renderMedicines() {
+  const container = document.getElementById('med-list');
+  if (!container) return;
+  const meds = loadList(LS_MEDS);
+  if (meds.length === 0) { container.innerHTML = '<div class="empty-state"><span class="empty-state-icon">💊</span>No medicines yet — tap <strong>+ Add</strong> to track one</div>'; return; }
+  const sorted = [...meds].sort((a,b) => a.name.localeCompare(b.name));
+  const today = todayStr();
+  container.innerHTML = sorted.map(med => {
+    const takenToday = Array.isArray(med.takenLog[today]) ? med.takenLog[today] : [];
+    const allTaken = med.times.length > 0 && med.times.every(t => takenToday.includes(t));
+    return `<div class="item-card med-card">
+      <div class="item-name">${escapeHtml(med.name)}</div>
+      ${med.type?`<div class="item-details"><span class="item-type">${escapeHtml(med.type)}</span></div>`:''}
+      ${med.dosage?`<div class="item-details"><span>${escapeHtml(med.dosage)}</span></div>`:''}
+      ${med.instructions?`<div class="med-instructions">📋 ${escapeHtml(med.instructions)}</div>`:''}
+      <div class="time-pills">${buildTimePills(med, today, true)}</div>
+      ${med.notes?`<div class="item-notes">${escapeHtml(med.notes)}</div>`:''}
+      <div class="card-actions"><div class="card-meta">${allTaken?'<span class="badge-all-taken">✅ All taken today</span>':''}</div>
+        <button class="btn-action btn-delete" onclick="deleteMedicine('${escapeHtml(med.id)}')">🗑️</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   Today view
+   ============================================================ */
+function renderToday() {
+  const container = document.getElementById('today-content');
+  if (!container) return;
+  const today = todayStr();
+
+  const meds = loadList(LS_MEDS);
+  let medHtml;
+  if (meds.length === 0) {
+    medHtml = '<div class="empty-state"><span class="empty-state-icon">💊</span>No medicines tracked yet</div>';
+  } else {
+    const sorted = [...meds].sort((a,b) => a.name.localeCompare(b.name));
+    medHtml = '<div class="item-list">' + sorted.map(med => {
+      const takenToday = Array.isArray(med.takenLog[today]) ? med.takenLog[today] : [];
+      const allTaken = med.times.length > 0 && med.times.every(t => takenToday.includes(t));
+      const dosageHtml = med.dosage ? ` <span style="font-weight:400;color:var(--text-muted);font-size:0.88rem;">${escapeHtml(med.dosage)}</span>` : '';
+      return `<div class="item-card med-card ${allTaken?'paid-card':''}">
+        <div class="item-name">${escapeHtml(med.name)}${dosageHtml}</div>
+        <div class="time-pills">${buildTimePills(med, today, true)}</div>
+        ${allTaken?'<div class="card-actions"><div class="card-meta"><span class="badge-all-taken">✅ All taken</span></div></div>':''}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  const bills = loadList(LS_BILLS);
+  const billsDue = bills.filter(b => { if (isBillPaidThisCycle(b)) return false; const n=getNextDueDate(b); return n && daysDiff(n) <= 14; })
+    .sort((a,b) => { const da=getNextDueDate(a)||'9999', db=getNextDueDate(b)||'9999'; return da<db?-1:da>db?1:0; });
+  let billHtml;
+  if (billsDue.length === 0) {
+    billHtml = '<div class="empty-state"><span class="empty-state-icon">✅</span>No bills due in the next 14 days</div>';
+  } else {
+    billHtml = '<div class="item-list">' + billsDue.map(bill => {
+      const next = getNextDueDate(bill);
+      const amountHtml = bill.amount!=null ? `<span class="amount-display">$${Number(bill.amount).toFixed(2)}</span>` : '';
+      return `<div class="item-card bills-card">
+        <div class="item-name">${escapeHtml(bill.name)}</div>
+        <div class="item-details">${amountHtml}${next?`<span>Due ${escapeHtml(formatDateShort(next))}</span>`:''}</div>
+        <div class="card-actions"><div class="card-meta">${billUrgencyBadge(bill)}</div>
+          <button class="btn-action btn-paid" onclick="markBillPaid('${escapeHtml(bill.id)}')">✓ Paid?</button>
+        </div></div>`;
+    }).join('') + '</div>';
+  }
+
+  const appts = loadList(LS_APPTS);
+  const apptsSoon = appts.filter(a => { const d=daysDiff(a.date); return d>=0 && d<=30; })
+    .sort((a,b) => { const c=(a.date||'')<(b.date||'')?-1:(a.date||'')>(b.date||'')?1:0; return c!==0?c:(a.time||'')<(b.time||'')?-1:1; }).slice(0,5);
+  let apptHtml;
+  if (apptsSoon.length === 0) {
+    apptHtml = '<div class="empty-state"><span class="empty-state-icon">📅</span>No appointments in the next 30 days</div>';
+  } else {
+    apptHtml = '<div class="item-list">' + apptsSoon.map(appt => `<div class="item-card appt-card">
+      <div class="item-name">${escapeHtml(appt.doctor)}</div>
+      <div class="item-details">
+        ${appt.type?`<span>${escapeHtml(appt.type)}</span>`:''}
+        <span>📆 ${escapeHtml(formatDate(appt.date))}</span>
+        ${appt.time?`<span>🕐 ${escapeHtml(formatTime(appt.time))}</span>`:''}
+        ${appt.location?`<span>📍 ${escapeHtml(appt.location)}</span>`:''}
+      </div>
+      <div class="card-actions"><div class="card-meta">${apptDateBadge(appt.date)}</div></div>
+    </div>`).join('') + '</div>';
+  }
+
+  container.innerHTML = `
+    <div class="today-date">📆 ${escapeHtml(formatDate(today))}</div>
+    <div class="today-section"><div class="today-section-title">💊 Today's Medicines</div>${medHtml}</div>
+    <div class="today-section"><div class="today-section-title">💳 Bills Due Soon</div>${billHtml}</div>
+    <div class="today-section"><div class="today-section-title">📅 Upcoming Appointments</div>${apptHtml}</div>`;
+}
+
+/* ============================================================
+   Notifications
+   ============================================================ */
+function updateNotifButton() {
+  const btn = document.getElementById('btn-notif');
+  if (!btn) return;
+  if (!('Notification' in window)) { btn.style.opacity='0.4'; return; }
+  if (Notification.permission === 'granted') { btn.classList.add('enabled'); btn.title = 'Reminders enabled'; }
+  else { btn.classList.remove('enabled'); btn.title = 'Tap to enable reminders'; }
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) { showToast('🚫 Notifications not supported here'); return; }
+  if (Notification.permission === 'granted') { showToast('🔔 Reminders are already enabled!'); scheduleNotifications(); return; }
+  if (Notification.permission === 'denied') { showToast('🚫 Notifications blocked — enable in browser settings'); return; }
+  Notification.requestPermission().then(perm => {
+    updateNotifButton();
+    if (perm === 'granted') { showToast('🔔 Reminders enabled!'); scheduleNotifications(); }
+    else showToast('Reminder permission not granted');
+  });
+}
+
+function showNotification(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try { new Notification(title, { body, tag: tag || 'moms-reminders' }); } catch(e) {}
+}
+
+function msUntilTime(hh, mm) {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  return target - now;
+}
+
+function scheduleNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  _notifTimers.forEach(t => clearTimeout(t)); _notifTimers = [];
+  const today = todayStr();
+  const meds = loadList(LS_MEDS);
+  const allSlots = [...new Set(meds.flatMap(m => m.times))];
+  allSlots.forEach(slot => {
+    const { hh, mm } = parseSlotTime(slot);
+    const delay = msUntilTime(hh, mm);
+    _notifTimers.push(setTimeout(() => {
+      const untaken = loadList(LS_MEDS).filter(m => m.times.includes(slot) && !(Array.isArray(m.takenLog[today]) && m.takenLog[today].includes(slot)));
+      if (untaken.length === 0) return;
+      const names = untaken.map(m => m.name).join(', ');
+      showNotification(`⏰ ${formatTime12h(slot)} Medicine Reminder`, untaken.length===1?`Time to take ${untaken[0].name}${untaken[0].dosage?' — '+untaken[0].dosage:''}`:`${untaken.length} medicines: ${names}`, `med-${slot}`);
+    }, delay));
+    _notifTimers.push(setTimeout(() => {
+      const still = loadList(LS_MEDS).filter(m => m.times.includes(slot) && !(Array.isArray(m.takenLog[today]) && m.takenLog[today].includes(slot)));
+      if (still.length === 0) return;
+      showNotification(`⚠️ Don't forget your medicine!`, still.length===1?`${still[0].name} still hasn't been marked as taken`:`Still waiting: ${still.map(m=>m.name).join(', ')}`, `med-followup-${slot}`);
+    }, delay + 30*60*1000));
+  });
+  const billDelay = msUntilTime(9, 0);
+  _notifTimers.push(setTimeout(() => {
+    const due = loadList(LS_BILLS).filter(b => { if(isBillPaidThisCycle(b)) return false; const n=getNextDueDate(b); return n && daysDiff(n)>=0 && daysDiff(n)<=3; });
+    if (due.length === 0) return;
+    showNotification('💳 Bill Reminder', due.length===1?`${due[0].name} is due soon`:`${due.length} bills due soon`, 'bills-reminder');
+  }, billDelay));
+  _notifTimers.push(setTimeout(() => {
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+    const tmrStr = tomorrow.toISOString().slice(0,10);
+    const tmrAppts = loadList(LS_APPTS).filter(a => a.date === tmrStr);
+    if (tmrAppts.length === 0) return;
+    const names = tmrAppts.map(a => a.doctor + (a.time?` at ${formatTime(a.time)}`:'')).join(', ');
+    showNotification('📅 Appointment Tomorrow', tmrAppts.length===1?`Reminder: ${names}`:`${tmrAppts.length} appointments tomorrow`, 'appt-reminder');
+  }, msUntilTime(9, 0)));
+}
+
+/* ============================================================
+   ICS Calendar Export
+   ============================================================ */
+function escapeIcs(str) {
+  if (!str) return '';
+  return String(str).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+function formatIcsDate(dateStr, timeStr) {
+  const d = parseLocalDate(dateStr);
+  const pad = n => String(n).padStart(2,'0');
+  if (timeStr) { const [hh,mm]=timeStr.split(':').map(Number); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(hh)}${pad(mm)}00`; }
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+}
+function dtstamp() { return new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z'; }
+function downloadFile(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function exportApptToCalendar(id) {
+  const appt = loadList(LS_APPTS).find(a => a.id === id);
+  if (!appt) { showToast('⚠️ Appointment not found'); return; }
+  const isAllDay = !appt.time;
+  const dtstart = formatIcsDate(appt.date, appt.time);
+  let dtend;
+  if (isAllDay) { const d=parseLocalDate(appt.date); d.setDate(d.getDate()+1); const pad=n=>String(n).padStart(2,'0'); dtend=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
+  else dtend = formatIcsDate(appt.date, addMinutes(appt.time, 60));
+  const vt = isAllDay ? ';VALUE=DATE' : '';
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Moms Reminders//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+    `UID:${appt.id}@moms-reminders`,`DTSTAMP:${dtstamp()}`,`DTSTART${vt}:${dtstart}`,`DTEND${vt}:${dtend}`,
+    `SUMMARY:${escapeIcs(appt.doctor+(appt.type?' — '+appt.type:''))}`,
+    appt.location?`LOCATION:${escapeIcs(appt.location)}`:'',
+    appt.notes?`DESCRIPTION:${escapeIcs(appt.notes)}`:'',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Appointment tomorrow','TRIGGER:-P1D','END:VALARM',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Appointment in 1 hour','TRIGGER:-PT1H','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].filter(l=>l!=='').join('\r\n');
+  downloadFile(`appointment-${appt.doctor.replace(/\s+/g,'-').toLowerCase()}.ics`, ics, 'text/calendar;charset=utf-8');
+  showToast('📅 Calendar file downloaded!');
+}
+
+function exportBillToCalendar(id) {
+  const bill = loadList(LS_BILLS).find(b => b.id === id);
+  if (!bill) { showToast('⚠️ Bill not found'); return; }
+  const next = getNextDueDate(bill) || bill.dueDate;
+  const dtstart = formatIcsDate(next, '');
+  const d = parseLocalDate(next); d.setDate(d.getDate()+1);
+  const pad = n => String(n).padStart(2,'0');
+  const dtend = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  const amountStr = bill.amount!=null?` — $${Number(bill.amount).toFixed(2)}`:'';
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Moms Reminders//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+    `UID:${bill.id}@moms-reminders`,`DTSTAMP:${dtstamp()}`,`DTSTART;VALUE=DATE:${dtstart}`,`DTEND;VALUE=DATE:${dtend}`,
+    `SUMMARY:${escapeIcs('Pay: '+bill.name+amountStr)}`,
+    bill.notes?`DESCRIPTION:${escapeIcs(bill.notes)}`:'',
+    bill.recurring?'RRULE:FREQ=MONTHLY;COUNT=24':'',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Bill due in 3 days','TRIGGER:-P3D','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].filter(l=>l!=='').join('\r\n');
+  downloadFile(`bill-${bill.name.replace(/\s+/g,'-').toLowerCase()}.ics`, ics, 'text/calendar;charset=utf-8');
+  showToast('📅 Calendar file downloaded!');
+}
+
+/* ============================================================
+   PWA Install
+   ============================================================ */
+function triggerInstallPrompt() {
+  if (_deferredInstallPrompt) {
+    _deferredInstallPrompt.prompt();
+    _deferredInstallPrompt.userChoice.then(c => { _deferredInstallPrompt = null; dismissInstallBanner(); if(c.outcome==='accepted') showToast('🎉 App installed!'); });
+  }
+}
+function dismissInstallBanner() {
+  const b = document.getElementById('install-banner');
+  if (b) b.classList.add('hidden');
+  try { sessionStorage.setItem('install-dismissed','1'); } catch(e) {}
+}
+function isRunningStandalone() {
+  return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+}
+function initInstallBanner() {
+  if (isRunningStandalone() || sessionStorage.getItem('install-dismissed')) return;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); _deferredInstallPrompt = e;
+    const b = document.getElementById('install-banner');
+    if (b) b.classList.remove('hidden');
+  });
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !isRunningStandalone()) {
+    setTimeout(() => { if(!sessionStorage.getItem('install-dismissed')) showToast('📱 Tap Share → Add to Home Screen for best experience!'); }, 3000);
+  }
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initInstallBanner();
+  initSync();
+  renderToday();
+  updateNotifButton();
+  scheduleNotifications();
+});
+  </script>
+</body>
+</html>
